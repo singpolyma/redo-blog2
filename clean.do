@@ -1,1 +1,1 @@
-rm $(redo-targets)
+rm -f $(redo-targets)

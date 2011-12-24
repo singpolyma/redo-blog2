@@ -29,7 +29,7 @@ echo "	<icon>$icon</icon>"
 
 # Contents Go Here
 redo-ifchange "tagindex"
-grep "^$tag " < "tagindex" | cut -d ' ' -f 2- | tac | while read file; do
+grep "^$(echo "$tag" | sed -e 's/\\/\\\\/g') " "tagindex" | cut -d ' ' -f 2- | sed '1!G;h;$!d' | while read file; do
 	redo-ifchange "$file.converted"
 	title="$(sed -n 's/Title:[ 	]*\(.*\)/\1/p' < "$file.converted")"
 	mod_date="$(sed -n 's/Date-Modified:[ 	]*\(.*\)/\1/p' < "$file.converted")"

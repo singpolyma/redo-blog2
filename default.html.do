@@ -9,15 +9,20 @@ dependedFile="$base.converted"
 redo-ifchange "$dependedFile" "$tag.tagtemplate" "tagindex"
 
 # Find our position for our tag in the index
-pos="$(grep "^$tag " < "tagindex" | grep -n " ${base}\$" | cut -d ':' -f 1)"
+taglist="$(grep "^$(echo "$tag" | sed -e 's/\\/\\\\/g') " tagindex)"
+pos="$(echo "$taglist" | grep -n " $base\$" | cut -d ':' -f 1)"
 
 if [ "$pos" -gt 1 ]; then 
-	prev="$(grep "^$tag " < "tagindex" | sed -n "$(expr "$pos" - 1)"p | cut -d ' ' -f2-)"
+	prev="$(echo "$taglist" | sed -n "$(( $pos - 1 ))"p | cut -d ' ' -f2-)"
 else
 	prev=""
 fi
 
 # Sed returns "" for me when I walk off the edge of the file
-next="$(grep "^$tag " < "tagindex" | sed -n "$(expr "$pos" + 1)"p | cut -d ' ' -f2-)"
+next="$(echo "$taglist" | sed -n "$(( $pos + 1 ))"p | cut -d ' ' -f2-)"
 
-(echo "Next-Link: $next"; echo "Previous-Link: $prev"; cat "$dependedFile") | "./$tag.tagtemplate"
+(
+	echo "Next-Link: $next"
+	echo "Previous-Link: $prev"
+	cat "$dependedFile"
+) | "./$tag.tagtemplate"

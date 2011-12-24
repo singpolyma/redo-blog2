@@ -1,0 +1,14 @@
+Things that may be useful to keep alive in a fork:
+
+* Keywords/Subject/Content-ID/etc (that is, use standard headers where applicable)
+** Reason not in main: psycotica0 disagrees that this is useful
+* redo-blog style template system. Gets rid of the need to generate so many template scripts
+** Reason not in main: psycotica0 prefers having redo do all filname-based recognition
+* Nicer file extensions.  Is this still even necessary?
+
+Things I want to do and maybe mainline:
+
+* More template system options (mustache, especially).  Maybe modularise this designed more.
+* More *.compile (now called *.typeconvert?) scripts
+* Permalinks (this may just be part of how templates treat things)
+* Stable ATOM ids for sure

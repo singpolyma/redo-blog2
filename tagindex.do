@@ -1,4 +1,3 @@
-
 # This makes a list of files of the form:
 #  tag1 filename1
 #  tag2 filename1

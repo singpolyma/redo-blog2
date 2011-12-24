@@ -1,4 +1,3 @@
-
 # Generate a list of tags for each file, then use those to figure out what to build
 
 redo-ifchange "tagindex"

@@ -1,4 +1,3 @@
-
 # This takes all .html files and moves them into a folder based on their tag and with sensible file names
 
 # \ becomes / (to allow for hierarchy)

@@ -1,4 +1,3 @@
-
 # This is meant to use metadata from git, or hg, or the filesystem, or whatever to augment the user-given metadata
 # It's meant to fill in all the auto-generatable blanks
 # This implementation gets data from git.

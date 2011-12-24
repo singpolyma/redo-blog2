@@ -1,4 +1,3 @@
-
 # This is meant to take the mime files and run them through this tag's template engine to get static html files
 # It also fills in some per-tag info
 

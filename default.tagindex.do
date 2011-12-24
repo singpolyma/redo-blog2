@@ -1,4 +1,3 @@
-
 # This file makes list, for each tag, of recent articles, etc.
 
 tag="$1"

@@ -1,27 +1,27 @@
 
 # This takes all .html files and moves them into a folder based on their tag and with sensible file names
 
+# \ becomes / (to allow for hierarchy)
+
 redo-ifchange all
 
-ls *.html | while read line; do
-	tag="$(echo "$line" | sed 's/.*\.\([^.]*\)\.html$/\1/')"
-	filename="$(basename "$line" ".$tag.html")"
-	mkdir -p "$tag"
-	cp "$line" "$tag/$filename.html"
+for file in *.html; do
+	dir="$(echo "$file" | sed 's/.*\.\([^.]*\)\.html$/\1/' | tr '\\' '/')"
+	basename="${file##*.}"
+	mkdir -p "$dir"
+	cp -p "$file" "$dir/$basename.html"
 done
 
 # And move the index files in too
-ls *.tagindex | while read line; do
-	tag="$(basename "$line" ".tagindex")"
-	# Just a precaution
-	mkdir -p "$tag"
-	cp "$line" "$tag/index.html"
+for file in *.tagindex; do
+	dir="$(basename "$file" .tagindex | tr '\\' '/')"
+	mkdir -p "$dir"
+	cp -p "$file" "$dir/index.html"
 done
 
 # And move the feed files in too
-ls *.tagfeed | while read line; do
-	tag="$(basename "$line" ".tagfeed")"
-	# Just a precaution
-	mkdir -p "$tag"
-	cp "$line" "$tag/feed.atom"
+for file in *.tagfeed; do
+	dir="$(basename "$file" .tagfeed | tr '\\' '/')"
+	mkdir -p "$dir"
+	cp -p "$file" "$dir/index.atom"
 done

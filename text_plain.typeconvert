@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# This script turns plain text into html
+# It does this just by wrapping it in pre.
+# It also escapes & and < >
+echo '<pre>'
+cat | sed 's/&/\&amp;/g' | sed 's/</\&lt;/g' | sed 's/>/\&gt;/g'
+echo '</pre>'

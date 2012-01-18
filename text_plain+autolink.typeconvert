@@ -1,0 +1,122 @@
+#!/usr/bin/perl
+
+# This script turns plain text into html
+# It escapes & and < >
+# It additionally autolinks URIs, #hastags, and @names
+
+$tagbase = "/"; # Path to prepend to tags
+
+sub trim($) {
+	$_ = shift;
+	s/^\s+//;
+	s/\s+$//;
+	return $_;
+}
+
+sub htmlspecialchars($) {
+	$_ = shift;
+	s/&/&amp;/g;
+	s/</&lt;/g;
+	s/>/&gt;/g;
+	return $_;
+}
+
+sub maybe_addhttp($) {
+	$u = shift;
+	if($u !~ /\A[a-zA-Z]{2,7}:/) {
+		$u = 'http://'.$u;
+	}
+	return $u;
+}
+
+open ALIASES, "aliases";
+%aliases = ();
+while(<ALIASES>) {
+	/^([^ ]+) (.+)$/;
+	$aliases{$1} = $2;
+}
+close ALIASES;
+
+# ccTLD compresed regular expression clauses (re)created.
+# .mobi and .jobs deliberately excluded to avoid encouraging layer violations
+# part of $re derived from Android Open Source Project under Apache 2.0
+# with a bunch of subsequent fixes/improvements (e.g. ttk.me)
+# and added support for auto_linking @-names to Twitter (except CSS @-rules).
+# thus this entire function in particular is also Apache 2.0 licensed
+#	http://www.apache.org/licenses/LICENSE-2.0
+# - Tantek 2010-046
+# P.S. This function is idempotent and works on plain text or typical markup.
+# #tag support added, + better markup for @name -- Singpolyma 2010-048
+# Translated from CASSIS to Perl by Singpolyma, 2012-017
+
+$athashre = '(?:(?<![^\s>])\#[\.\-\/:_a-zA-Z0-9]+?[a-zA-Z][\.\-\/:_a-zA-Z0-9]+)|(?:(?<![^\s>])\@[\.\-\/:__a-zA-Z0-9]+)';
+$urire = '(?:(?:(?:https?:\/\/(?:(?:[!$&-.0-9;=?A-Z_a-z]|(?:\%[a-fA-F0-9]{2}))+(?:\:(?:[!$&-.0-9;=?A-Z_a-z]|(?:\%[a-fA-F0-9]{2}))+)?\@)?)?(?:(?:(?:[a-zA-Z0-9][-a-zA-Z0-9]*\.)+(?:(?:aero|arpa|asia|a[cdefgilmnoqrstuwxz])|(?:biz|b[abdefghijmnorstvwyz])|(?:cat|com|coop|c[acdfghiklmnoruvxyz])|d[ejkmoz]|(?:edu|e[cegrstu])|f[ijkmor]|(?:gov|g[abdefghilmnpqrstuwy])|h[kmnrtu]|(?:info|int|i[delmnoqrst])|j[emop]|k[eghimnrwyz]|l[abcikrstuvy]|(?:mil|museum|m[acdeghklmnopqrstuvwxyz])|(?:name|net|n[acefgilopruz])|(?:org|om)|(?:pro|p[aefghklmnrstwy])|qa|r[eouw]|s[abcdeghijklmnortuvyz]|(?:tel|travel|t[cdfghjklmnoprtvwz])|u[agkmsyz]|v[aceginu]|w[fs]|y[etu]|z[amw]))|(?:(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[1-9])\.(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[0-9])\.(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[0-9])\.(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9][0-9]|[0-9])))(?:\:\d{1,5})?)(?:\/(?:(?:[!#&-;=?-Z_a-z~])|(?:\%[a-fA-F0-9]{2}))*)?)(?=\b|\s|$)';
+
+while(<STDIN>) {
+	@ms = /$athashre|$urire/g;
+
+	if(!@ms) {
+		print;
+		next;
+	}
+
+	$mlen = @ms;
+	@sp = split /$athashre|$urire/;
+	$t = "";
+	for($i = 0; $i < $mlen; $i++) {
+		$spliti = @sp[$i];
+		$t .= $spliti;
+		$spe = substr($spliti,-5,5);
+		$matchi = @ms[$i];
+		if(substr(@sp[$i+1],0,1) eq '/') {# regex omits end slash before </a
+			@sp[$i+1] = substr(@sp[$i+1],1,length(@sp[$i+1])-1);
+			$matchi .= '/';
+		}
+		if(substr(@sp[$i+1],0,1) eq ')') {# regex omits end ) before </a
+			@sp[$i+1] = substr(@sp[$i+1],1,length(@sp[$i+1])-1);
+			$matchi .= ')';
+		}
+
+		if((!$spe || $spe !~ /(?:ref|ata|src|tle|lue)\=[\"\\\']?/) &&
+			 substr(trim(@sp[$i+1]),0,3) ne "</a" &&
+			 substr(trim(@sp[$i+1]),0,2) ne "\">" &&
+			 ('@charset@font@font-face@import@media@namespace@page@' !~ /\Q$matchi\@/)) {
+			$afterlink = substr($matchi,-1,1);
+			if('.!?,;"\')]}' =~ /\Q$afterlink/ && # trim punctuation from end
+			  ($afterlink ne ')' || $matchi !~ /\(/)) { # allow one paren pair
+				$matchi = substr($matchi,0,-1);
+			} else {
+				$afterlink = "";
+			}
+			if($matchi =~ /\A@/) {
+				$pre  = '@<span class="vcard"><a class="fn url" href="';
+				$post = '</a></span>';
+				$matchi = substr($matchi, 1, length($matchi)-1);
+				if($matchi =~ /$urire/) {
+					$u = htmlspecialchars(maybe_addhttp($matchi));
+				} elsif($aliases{$matchi}) {
+					$u = htmlspecialchars($aliases{$matchi});
+				} else {
+					$u = htmlspecialchars('http://twitter.com/'.$matchi);
+				}
+				$matchi = '">'.$matchi;
+			} elsif($matchi =~ /\A#/) {
+				$pre  = '#<a rel="tag" href="';
+				$post = '</a>';
+				$matchi = substr($matchi, 1, length($matchi)-1);
+				$u = htmlspecialchars($tagbase.$matchi);
+				$matchi = '">'.$matchi;
+			} else {
+				$pre  = '<a class="auto-link" href="';
+				$post = '</a>';
+				$u = htmlspecialchars(maybe_addhttp($matchi));
+				$matchi = '">'.htmlspecialchars($matchi);
+			}
+			$t = $t.$pre.$u.$matchi.$post.$afterlink;
+		} else {
+			$t = $t.$matchi;
+		}
+	}
+
+	print $t.@sp[$mlen];
+}
